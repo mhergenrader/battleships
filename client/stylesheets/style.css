@@ -1,0 +1,62 @@
+body {
+	box-sizing: border-box;
+	font-size: 100%;
+}
+
+#game {
+	background-color: yellow;
+}
+
+.grid {
+	width: 45%;
+	float: left;
+	border: 1px black solid;
+}
+
+#theirgrid {
+	border-left: none;
+}
+
+#menu {
+	clear: left;
+}
+
+table {
+	border-spacing: 0px;
+	border-collapse: collapse;
+}
+
+td {
+	
+	border: 1px solid black;
+	/*width: 20px;*/
+	height: 20px;
+}
+
+.gamegrid {
+	margin: 10% auto 10%;
+}
+
+a {
+	display: inline-block; /* allow sizing the anchors inside tables */
+	width: 30px;
+	height: 30px;
+	border: none;
+	text-align: center;
+}
+
+td:hover {
+	background-color: blue;
+}
+
+.chosen {
+	background-color: gray; /* for own battleships */
+}
+
+.hit {
+	background-color: red;
+}
+
+.miss {
+	background-color: white;
+}
