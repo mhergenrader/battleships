@@ -1,6 +1,6 @@
 // for first iteration: non-auto-balancing tree
 
-// should I set up some of these methods as asynchronous?
+// should I set up some of these methods as asynchronous? all the below are synchronous
 
 var BinarySearchTree, BST;
 
@@ -12,7 +12,6 @@ BinarySearchTree = BST = function(compare) {
 	this.size = 0;
 	this.compare = compare;
 }
-
 
 function TreeNode(object) {
 	if(!(this instanceof TreeNode)) {
@@ -41,7 +40,7 @@ BinarySearchTree.prototype.addNode = function(object) {
 		rv = true;
 	} else {
 		rv = (function addNewNode(root) {
-			var compValue = self.compare(object,root.object); // how does this function operate wrt scope chain?
+			var compValue = self.compare(object,root.object); // how does this function operate wrt scope chain and activation objects?
 			if(compValue < 0) {
 				if(root.left == null) {
 					root.left = newNode;
@@ -66,12 +65,18 @@ BinarySearchTree.prototype.addNode = function(object) {
 	if(rv) {
 		this.size++;
 	}
-	return rv ? newNode : null;	
+	return rv ? newNode : null;	// could also chain by returning tree itself?
 };
 
 // need to return the value here that we are deleting
 BinarySearchTree.prototype.removeNode = function(object) {
+	var self = this; // to use compare function in inner function
+		
+	(function removeMyNode(root,parent) {
+		
+	})(this.root,null);
 	
+	return object; // could also chain by returning tree itself?
 };
 
 BinarySearchTree.prototype.hasValue = function(object) {
