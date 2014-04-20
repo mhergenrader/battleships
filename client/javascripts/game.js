@@ -1,24 +1,54 @@
 // make sure to save this time! wrote the entire battleship code on the client-side, only for it to disappear!
 
+
+
 // shorthand for onload
 $(function() {
 	$('#mygrid').append(createTable(10, 10, 'My Grid')); // still need to check for null to avoid method being called? looks like this works w/o that!
-	
 	$('#theirgrid').append(createTable(10, 10, "Opponent's Grid"));
 	
+	$('#mygrid a').click(function(event) {
+		$(event.target).parent().toggleClass('chosen');
+	});
+	$('#theirgrid a').click(function(event) {
+		if(!$(event.target).parent().hasClass('guessed')) {
+			$(event.target).parent().addClass('guessed');
+			$(event.target).parent().addClass(checkForHit(+$(event.target).text()) ? 'hit' : 'miss');
+		}
+	});
+	
+	function checkForHit(position) {
+		var enemyShipSpots = [31,32,33,34,35]; // can use a closure after ships selected to ensure fairness? (or just the server)
+		
+		return enemyShipSpots.indexOf(position) > -1;
+	}
 	
 	// note that document.createElement is much faster than creating jQuery elements!
 	function createTable(rows, cols, captionText) {
-		var $table = $('<table>'); // perhaps the <> syntax is required so that it differentiates from running a query on the DOM
+		var A_VALUE = 65;
+		
+		var $table = $('<table>',{'class' : 'gamegrid'}); // perhaps the <> syntax is required so that it differentiates from running a query on the DOM
 		var $caption = $('<caption>').text(captionText);		
 		var $thead = $('<thead>');
+		
+		var $tableHeader = $('<tr>');
+		$tableHeader.append($('<th>',{'scope' : 'col'}));
+		for(var j = 0; j < cols; j++) {
+			$tableHeader.append($('<th>',{'scope' : 'col'}).text(String.fromCharCode(A_VALUE + j)));
+		}
+		$thead.append($tableHeader);
 		
 		var $tbody = $('<tbody>');
 		for(var i = 0; i < rows; i++) {
 			var $tr = $('<tr>');
+			
+			var $rowHeader = $('<th>',{'scope' : 'row'}).text(i);
+			$tr.append($rowHeader);
+			
 			for(var j = 0; j < cols; j++) {
 				var $td = $('<td>');
 				var $anchor = $('<a>',{'href':'#'}).text(i * rows + j);
+				
 				$td.append($anchor);
 				$tr.append($td);
 			}
