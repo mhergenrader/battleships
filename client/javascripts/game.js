@@ -2,13 +2,37 @@
 
 // shorthand for onload
 $(function() {
-	$('#mygid').append(createTable(10, 10, 'My Grid')); // still need to check for null to avoid method being called? looks like this works w/o that!
+	$('#mygrid').append(createTable(10, 10, 'My Grid')); // still need to check for null to avoid method being called? looks like this works w/o that!
 	
 	$('#theirgrid').append(createTable(10, 10, "Opponent's Grid"));
 	
+	
+	// note that document.createElement is much faster than creating jQuery elements!
 	function createTable(rows, cols, captionText) {
+		var $table = $('<table>'); // perhaps the <> syntax is required so that it differentiates from running a query on the DOM
+		var $caption = $('<caption>').text(captionText);		
+		var $thead = $('<thead>');
 		
-	}	
+		var $tbody = $('<tbody>');
+		for(var i = 0; i < rows; i++) {
+			var $tr = $('<tr>');
+			for(var j = 0; j < cols; j++) {
+				var $td = $('<td>');
+				var $anchor = $('<a>',{'href':'#'}).text(i * rows + j);
+				$td.append($anchor);
+				$tr.append($td);
+			}
+			$tbody.append($tr);
+		}
+		
+		$table.append($caption);
+		$table.append($thead);
+		$table.append($tbody);
+		
+		return $table;
+	}
+	
+	console.log('success');
 });
 
 /*
