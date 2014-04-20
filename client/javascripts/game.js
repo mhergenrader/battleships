@@ -4,11 +4,21 @@
 
 // shorthand for onload
 $(function() {
+	var globals = {
+		numSelected : 0,
+		NUM_NEEDED : 3
+	};
+	
 	$('#mygrid').append(createTable(10, 10, 'My Grid')); // still need to check for null to avoid method being called? looks like this works w/o that!
 	$('#theirgrid').append(createTable(10, 10, "Opponent's Grid"));
 	
 	$('#mygrid a').click(function(event) {
+		globals.numSelected += $(event.target).parent().hasClass('chosen') ? -1 : 1;
+		if(globals.numSelected === globals.NUM_NEEDED) {
+			$('#gameform button').removeClass('disabled').addClass('enabled');
+		}
 		$(event.target).parent().toggleClass('chosen');
+		console.log(globals.numSelected);
 	});
 	$('#theirgrid a').click(function(event) {
 		if(!$(event.target).parent().hasClass('guessed')) {
@@ -17,9 +27,12 @@ $(function() {
 		}
 	});
 	
+	$('#gameform button').click(function(event) {
+		console.log('button clicked');
+	});
+	
 	function checkForHit(position) {
 		var enemyShipSpots = [31,32,33,34,35]; // can use a closure after ships selected to ensure fairness? (or just the server)
-		
 		return enemyShipSpots.indexOf(position) > -1;
 	}
 	
@@ -62,7 +75,7 @@ $(function() {
 		return $table;
 	}
 	
-	console.log('success');
+	$('#gameconsole').append($('<p>').text('Please select your ships'));
 });
 
 /*

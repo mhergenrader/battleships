@@ -5,6 +5,7 @@ body {
 
 #game {
 	background-color: yellow;
+	overflow: auto;
 }
 
 .grid {
@@ -17,7 +18,7 @@ body {
 	border-left: none;
 }
 
-#menu {
+#gameform {
 	clear: left;
 }
 
@@ -59,4 +60,15 @@ td:hover {
 
 .miss {
 	background-color: white;
+}
+
+button.disabled {
+	background: linear-gradient(to top, #CCC 40%, #EEE);
+	color: #AAA;
+	border: none;
+}
+
+button.enabled {
+	background: linear-gradient(to top, #0F0 50%, #8F8);
+	border: none;
 }
