@@ -30,7 +30,7 @@ function clone(o1) {
 
 // shorthand for onload
 $(function() {
-	'use strict';
+	'use strict'; // first game is done, but what a mess! lots of model, view components intermingled everywhere - one action could affect multiple components, some of which i'm forgetting (like game state)
 	
 	var globals = {
 		numSelected : 0,
@@ -135,18 +135,24 @@ $(function() {
 			
 				// check for sink event (could I add a listener or must i couple that here?)
 				if(hitRegisteredString) { // if a truthy value
+					consoleMessage(comp + ' guessed ' + $(event.target).text() + ' and got a hit!');
+					
 					if(--myShipCounts[hitRegisteredString] === 0) {
 						consoleMessage(comp + ' sunk ' + me + '\'s ' + hitRegisteredString + '!','importantMsg'); // again, this should be changed to be a message
 					}
 					if(--myCount === 0) { // check for game over event
 						consoleMessage(comp + ' has won the game!','importantMsg');
+						gameState = 3;
+						$('#gameconsole h1').text('GAME OVER');
 					}
 				} else {
 					consoleMessage(comp + ' guessed ' + $(event.target).text() + ', but missed!');
 				}			
 				
-				activePlayer = 0;
-				$('#gameform h1').text(me + "\'s turn");
+				if(gameState !== 3) { // if game isn't over, switch turns
+					activePlayer = 0;
+					$('#gameform h1').text(me + "\'s turn");
+				}
 			}
 		}
 	});
@@ -163,26 +169,31 @@ $(function() {
 			
 				// check for sink event (could I add a listener or must i couple that here?)
 				if(hitRegisteredString) { // if a truthy value
+					consoleMessage(me + ' guessed ' + $(event.target).text() + ' and got a hit!');
+					
 					if(--enemyShipCounts[hitRegisteredString] === 0) {
 						consoleMessage(me + ' sunk ' + comp + '\'s ' + hitRegisteredString + '!','importantMsg'); // again, this should be changed to be a message
 					}
 					if(--enemyCount === 0) { // check for game over event
-						consoleMessage(me + ' has won the game!','importantMsg');
+						consoleMessage(me + ' has won the game!','importantMsg');						
+						gameState = 3;
+						$('#gameform h1').text('GAME OVER');
 					}
 				} else {
 					consoleMessage(me + ' guessed ' + $(event.target).text() + ', but missed!');
 				}
 			
 				// end my turn
-				activePlayer = 1;
-				$('#gameform h1').text(comp + "\'s turn");
+				if(gameState !== 3) {
+					activePlayer = 1;
+					$('#gameform h1').text(comp + "\'s turn");
 			
-				setTimeout(function() {
-					var chosenSpot = runAIRandom();
-					console.log('#my' + chosenSpot);
-					$('#my' + chosenSpot + ' a').trigger('click'); // AI makes a move
-					//activePlayer = 0; // can't set this yet! switching players must be done after other logic runs (otherwise, we fire trigger event in queue, but the next line runs first!)
-				},1000);
+					setTimeout(function() {
+						var chosenSpot = runAIRandom();
+						$('#my' + chosenSpot + ' a').trigger('click'); // AI makes a move - must trigger click on the actual link itself (id was added to td elements)
+						//activePlayer = 0; // can't set this yet! switching players must be done after other logic runs (otherwise, we fire trigger event in queue, but the next line runs first!)
+					},2000);
+				}
 			}
 		}
 	});
@@ -196,7 +207,7 @@ $(function() {
 	
 	function consoleMessage(str,classValue) {
 		// should decide class value
-		$('#gameconsole').append($('<p>',{'class':classValue || ''}).text(str)); // wonder if jQuery already handles the '' logic
+		$('#gameconsole').prepend($('<p>',{'class':classValue || ''}).text(str)); // wonder if jQuery already handles the '' logic
 	}
 		
 	// Computer player strategies (could make an object that has these as properties):
@@ -410,7 +421,7 @@ $(function() {
 		return $table;
 	}
 	
-	$('#gameconsole').append($('<p>').text('Please select your ships'));
+	//$('#gameconsole').append($('<p>').text('Please select your ships'));
 });
 
 /*
