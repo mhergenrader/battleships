@@ -1,22 +1,65 @@
 // make sure to save this time! wrote the entire battleship code on the client-side, only for it to disappear!
 
+// durstenFeld shuffle algorithm - could include as a polyfill on an array
+function shuffle(array, chosen, copy) {
+	var n = array.length,
+		result = copy ? array.slice(0) : array,
+		r = chosen,
+		i, temp, selectedIndex;
+	
+	for(i = 0; i < r; i++) {
+		var selectedIndex = i + Math.floor(Math.random() * (n - i));
+		
+		temp = result[i];
+		result[i] = result[selectedIndex];
+		result[selectedIndex] = temp;
+	}
+	
+	return result;	
+}
 
+var arr = [1,2,3,4,5];
+console.log(shuffle(arr,5));
 
 // shorthand for onload
 $(function() {
 	var globals = {
 		numSelected : 0,
-		NUM_NEEDED : 3
+		NUM_NEEDED : 3,
+		NUM_ROWS : 10,
+		NUM_COLS : 10
 	};
 	
-	$('#mygrid').append(createTable(10, 10, 'My Grid')); // still need to check for null to avoid method being called? looks like this works w/o that!
-	$('#theirgrid').append(createTable(10, 10, "Opponent's Grid"));
+	var shipSizes = { // possibly should do ship dimensions instead
+		'Aircraft Carrier' : 5,
+		'Battleship' : 4,
+		'Cruiser' : 3,
+		'Submarine' : 3,
+		'Patrol Boat' : 2
+	};
 	
+	// TODO: UNCOMMENT
+	//var enemyShips = generateEnemyShips(); // execute this immediately?
+	
+	$('#mygrid').append(createTable(globals.NUM_ROWS, globals.NUM_COLS, 'My Grid')); // still need to check for null to avoid method being called? looks like this works w/o that!
+	$('#theirgrid').append(createTable(globals.NUM_ROWS, globals.NUM_COLS, "Opponent's Grid"));
+	
+	// assign id's to each table cell in the enemy grid (just to display where the enemy ships are - won't use later, obviously)
+	// these ID's allow quick access to the individual cells to select them (though this is a decently heavy process) - could also do createTable and decide to append ID's there rather than a separate loop
+	(function assignEnemyIds(count) {
+		$('#theirgrid td').each(function(index, $a) {
+			$a.id = ('enemy' + count++); // jquery also provides the index parameter - refactor to use that (but know that the closure pattern worked here, though less efficient, since count is provided inline as a local param vs. a closure-provided param - this is a one-level difference in scope chain)
+		});
+	})(0);
+		
 	$('#mygrid a').click(function(event) {
 		globals.numSelected += $(event.target).parent().hasClass('chosen') ? -1 : 1;
 		if(globals.numSelected === globals.NUM_NEEDED) {
 			$('#gameform button').removeClass('disabled').addClass('enabled');
+		} else {
+			$('#gameform button').removeClass('enabled').addClass('disabled'); // should just do toggleClass
 		}
+		
 		$(event.target).parent().toggleClass('chosen');
 		console.log(globals.numSelected);
 	});
@@ -26,11 +69,106 @@ $(function() {
 			$(event.target).parent().addClass(checkForHit(+$(event.target).text()) ? 'hit' : 'miss');
 		}
 	});
-	
 	$('#gameform button').click(function(event) {
 		console.log('button clicked');
 	});
 	
+	// this function could get ugly - try to ensure it doesn't go on forever (this is a randomized algo, after all)
+	function generateEnemyShips() {
+		var shipsAvailable = {
+			'Aircraft Carrier' : [],
+			'Battleship' : [],
+			'Cruiser' : [],
+			'Submarine' : [],
+			'Patrol Boat' : []
+		};
+		
+		var shipKeys = Object.keys(shipsAvailable), len = shipKeys.length;
+		shipKeys.sort(function(a,b) {
+			return shipSizes[b] - shipSizes[a]; // sort in descending order (eww - just use a better data structure) for placement
+		});
+		
+		//var chosenSpaces = []; // must do selection w/o replacement
+		
+		var chosen = {};
+		
+		// place ships randomly in the grid so that they are within the grid and not overlapping other ships
+		// start w/ biggest ship, then work around to place it, then do next - check for boundaries and other ship spots
+		
+		// possible naive approach
+		var up, down, left, right;
+		var distance; // should really use a quick array for the directional spot checks
+		
+		var UP = 0,
+			DOWN = 1,
+			LEFT = 2,
+			RIGHT = 3;
+		
+		var dirs = ['U','D','L','R']; // helps modularize the checking functions		
+		var canPlaceInDirection = { 
+			'U' : function(startSpot, distance, chosen) {
+				var increment = globals.NUM_COLS;
+				for(var d = -1; d > -distance; d--) {
+					var spot = startSpot + (d * increment);
+					if(spot < 0 || chosen[spot]) {
+						return false;
+					}
+				}
+				return true;
+			},
+			'D' : function(startSpot, distance, chosen) {
+				var increment = globals.NUM_COLS;
+				for(var d = 1; d < distance; d++) {
+					var spot = startSpot + (d * increment);
+					if(spot > globals.NUM_ROWS * globals.NUM_COLS || chosen[spot]) {
+						return false;
+					}
+				}
+				return true;
+			},
+			'L' : function(startSpot, distance, chosen) {
+				for(var l = startSpot-1; l > startSpot - distance; l--) {
+					if(parseInt(l/globals.NUM_COLS) !== parseInt(startSpot/globals.NUM_COLS) || chosen[l]) {
+						return false;
+					}
+				}
+				return true;
+			},
+			'R' : function(startSpot, distance, chosen) {
+				for(var r = startSpot+1; r < startSpot + distance; r++) {
+					if(parseInt(r/globals.NUM_COLS) !== parseInt(startSpot/globals.NUM_COLS) || chosen[r]) {
+						return false;
+					}
+				}
+				return true;
+			}
+		}; // these functions can be even more modularized (for non-linear shapes), by including not just distance but a list of offsets from center
+		
+		for(var s = 0; s < len; s++) {
+			// could put this lower to only calculate if needed (but would recalculate possibly, since in a loop)
+			distance = shipSizes[shipKeys[s]]; // farthest point from spot picked (should do more with middle of ship and expand?)
+			
+			while(true) {
+				shuffle(dirs,dirs.length); // no need to consume return value - just do in place; shuffle during each attempt to be more random
+				
+				var trySpot = Math.floor(Math.random() * 100);
+				if(!chosen[trySpot]) { // TODO: in operator would work this same for a hash like this, which is faster?
+					for(var i = 0; i < dirs.length; i++) {
+						if(canPlaceInDirection[i](trySpot,distance,chosen)) {
+							break;
+						}
+					}
+					if(i < dirs.length) { // successful - place ship!
+						
+					}
+				}
+			}
+		}
+		
+		return shipsAvailable;
+	}
+	
+	// TODO: refactor this
 	function checkForHit(position) {
 		var enemyShipSpots = [31,32,33,34,35]; // can use a closure after ships selected to ensure fairness? (or just the server)
 		return enemyShipSpots.indexOf(position) > -1;
@@ -80,8 +218,6 @@ $(function() {
 
 /*
 todo:
--add createTable implementation (create 10x10 table from 0-99 anchor elements to #)
--add click events - color for my selections
 -add ships for enemies - differentiate between hit and miss for onclick events in their grid
 -add sunk events based on a simple data model for determining which ships are composed of which parts
 -add button to submit my ship choices - just print them out in very first iteration

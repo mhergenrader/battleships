@@ -69,6 +69,14 @@ button.disabled {
 }
 
 button.enabled {
-	background: linear-gradient(to top, #0F0 50%, #8F8);
+	background: linear-gradient(to top, #0C0 50%, #8C8);
 	border: none;
+}
+
+button.enabled:hover {
+	color: white;
+}
+
+.enemyShip {
+	background-color: #DDD;
 }
