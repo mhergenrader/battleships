@@ -69,6 +69,11 @@ button.enabled:hover {
 	color: white;
 }
 
+#gameconsole {
+	height: 20%;
+	overflow: scroll; /* need a few more rules here to scroll to the bottom (or do bottom -> top)*/
+}
+
 .enemyShip {
 	background-color: #DDD;
 	color: #000;
@@ -80,4 +85,9 @@ button.enabled:hover {
 
 .miss {
 	background-color: white;
+}
+
+.importantMsg {
+	color: red;
+	font-style: italic;
 }

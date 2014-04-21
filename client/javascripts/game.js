@@ -44,6 +44,10 @@ $(function() {
 		this.type = type;
 	}
 	
+	Player.prototype.toString = function() {
+		return this.name;
+	}
+	
 	var me = new Player('Michael','human');
 	var comp = new Player('Computer','computer');
 	
@@ -56,6 +60,9 @@ $(function() {
 	};
 	
 	var humanTurn = true;
+	var gameOver = false; // do I use this?
+	
+	var compGuesses = {};
 	
 	// should track under Player game state
 	var myShipCounts = clone(shipSizes); // model for tracking game state
@@ -72,6 +79,11 @@ $(function() {
 			$a.id = ('enemy' + count++); // jquery also provides the index parameter - refactor to use that (but know that the closure pattern worked here, though less efficient, since count is provided inline as a local param vs. a closure-provided param - this is a one-level difference in scope chain)
 		});
 	})(0);
+	(function assignMyIds(count) {
+		$('#mygrid td').each(function(index, $a) {
+			$a.id = ('my' + count++); // jquery also provides the index parameter - refactor to use that (but know that the closure pattern worked here, though less efficient, since count is provided inline as a local param vs. a closure-provided param - this is a one-level difference in scope chain)
+		});
+	})(0);
 	
 	$('#mygrid a').click(function(event) {
 		globals.numSelected += $(event.target).parent().hasClass('chosen') ? -1 : 1;
@@ -86,26 +98,33 @@ $(function() {
 	});
 	
 	$('#theirgrid a').click(function(event) {
-		if(!$(event.target).parent().hasClass('guessed')) {
-			$(event.target).parent().addClass('guessed');
+		if(humanTurn) {
+			if(!$(event.target).parent().hasClass('guessed')) { // lots of coupling between model and view here - I can start to see why it is such a pain and why MV* libraries can be useful
+				$(event.target).parent().addClass('guessed');
 			
-			var hitRegisteredString = checkForHit(+$(event.target).text());			
-			$(event.target).parent().addClass(hitRegisteredString ? 'hit' : 'miss'); // checks for truthy value
+				var hitRegisteredString = checkForHit(enemyShips,+$(event.target).text());			
+				$(event.target).parent().addClass(hitRegisteredString ? 'hit' : 'miss'); // checks for truthy value
 			
-			// check for sink event (could I add a listener or must i couple that here?)
-			if(hitRegisteredString) { // if a truthy value
-				if(--enemyShipCounts[hitRegisteredString] === 0) {
-					alert('You sunk the enemy\'s ' + hitRegisteredString + '!'); // again, this should be changed to be a message
+				// check for sink event (could I add a listener or must i couple that here?)
+				if(hitRegisteredString) { // if a truthy value
+					if(--enemyShipCounts[hitRegisteredString] === 0) {
+						consoleMessage(me + ' sunk ' + comp + '\'s ' + hitRegisteredString + '!','importantMsg'); // again, this should be changed to be a message
+					}
+					if(--enemyCount === 0) { // check for game over event
+						consoleMessage(me + ' has won the game!','importantMsg');
+					}
+				} else {
+					consoleMessage(me + ' guessed ' + $(event.target).text() + ', but missed!');
 				}
-				
-				// check for game over event
-				if(--enemyCount === 0) {
-					alert('You have won the game!');
-				}
-			}			
 			
-			// end my turn
-			humanTurn = !humanTurn; // or just false (faster)
+				// end my turn
+				humanTurn = false;
+			
+				setTimeout(function() {
+					$('#my' + runAIRandom()).trigger('click'); // AI makes a move					
+					humanTurn = true;
+				},3000);
+			}
 		}
 	});
 	
@@ -113,8 +132,31 @@ $(function() {
 		console.log('button clicked');
 	});
 	
-	var enemyShips = generateEnemyShips(); // execute this immediately?
+	// need one for my choices also!
+	var enemyShips = generateEnemyShips(); // return an object mapping a space to a ship name (O(1) time! - but is this organized the best?)
 	
+	function consoleMessage(str,classValue) {
+		// should decide class value
+		$('#gameconsole').append($('<p>',{'class':classValue || ''}).text(str)); // wonder if jQuery already handles the '' logic
+	}
+		
+	// Computer player strategies (could make an object that has these as properties):
+	function runAI() {
+		// can track history on the grid and recent hits (how a human might play)
+	}
+	
+	function runAIRandom() {
+	 	var guess; // need to change to selection w/o replacement (right now, just tracks what guessed, but doesn't efficiently eliminate - this could get really bad!)
+		do {
+			guess = Math.floor(Math.random() * globals.NUM_ROWS * globals.NUM_COLS); // just a random spot on the grid
+		} while(compGuess[guess]);
+		compGuess[guess] = true;
+		return guess;
+	}
+	
+	function switchTurns() {
+		
+	}
 	
 	// this function could get ugly - try to ensure it doesn't go on forever (this is a randomized algo, after all)
 	function generateEnemyShips() {
@@ -264,10 +306,10 @@ $(function() {
 	}
 	
 	// TODO: refactor this
-	function checkForHit(position) {
+	function checkForHit(placement, position) {
 		//var enemyShipSpots = [31,32,33,34,35]; // can use a closure after ships selected to ensure fairness? (or just the server)
 		//return enemyShipSpots.indexOf(position) > -1;
-		return enemyShips[position];
+		return placement[position];
 	}
 	
 	// note that document.createElement is much faster than creating jQuery elements!
