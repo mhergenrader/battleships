@@ -54,14 +54,6 @@ td:hover {
 	background-color: gray; /* for own battleships */
 }
 
-.hit {
-	background-color: red;
-}
-
-.miss {
-	background-color: white;
-}
-
 button.disabled {
 	background: linear-gradient(to top, #CCC 40%, #EEE);
 	color: #AAA;
@@ -80,4 +72,12 @@ button.enabled:hover {
 .enemyShip {
 	background-color: #DDD;
 	color: #000;
+}
+
+.hit { /* compound classes just in testing phase to ensure that I'm hitting a ship? (ex: .hit.enemyShip) */
+	background-color: red;
+}
+
+.miss {
+	background-color: white;
 }

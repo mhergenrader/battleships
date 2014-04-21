@@ -161,38 +161,40 @@ $(function() {
 						}
 					}
 					if(i < dirs.length) { // successful - place ship! and break out of loop and return where these are (so can render in v1, and can track later)
-						placeShip(trySpot,dirs[i],distance,chosen);						
+						placeShip(trySpot,dirs[i],distance,chosen,shipKeys[s]);						
 						break;						
 					}
 				}
 			}
 		}
 		
-		// HACK (since coupling this control function w/ view modification - should return the points instead ONLY)
+		///// HACK (since coupling this control function w/ view modification - should return the points instead ONLY)
 		
 		var chosenPoints = Object.keys(chosen), chosenLen = chosenPoints.length;
 		for(var c = 0; c < chosenLen; c++) {
-			console.log(chosenPoints[c] + ' changing class');
+			//console.log(chosenPoints[c] + ' changing class');
 			$('#enemy' + chosenPoints[c]).addClass('enemyShip');
-			console.log('#enemy' + chosenPoints[c] + ': ' + $('#enemy' + chosenPoints[c]).className + ' ' + $('#enemy' + chosenPoints[c]).id);
+			//console.log('#enemy' + chosenPoints[c] + ': ' + $('#enemy' + chosenPoints[c]).className + ' ' + $('#enemy' + chosenPoints[c]).id);
 		}
 		
-		console.log($('#enemy35').attr('id'));
+		//console.log($('#enemy35').attr('id'));
 		
-		// ENDHACK
+		///// ENDHACK
 		
-		return shipsAvailable;
+		// next step - make ship coordinates part of the model so can actually play a game! (still all client side)
+		console.log(chosen);
+		return chosen;
 	}
 	
 	// should combine this function w/ duplicated logic in canPlaceInDirection
-	function placeShip(startSpot, direction, distance, chosen) {
+	function placeShip(startSpot, direction, distance, chosen, ship) {
 		switch(direction) {
 			case 'U':
 			var increment = globals.NUM_COLS;
 			for(var d = 0; d > -distance; d--) {
 				var spot = startSpot + (d * increment); // not quite the same logic because need to start at startspot (rather than offset; could do startSpot during check, but this would be redundant, unless)
 				console.log(spot);
-				chosen[spot] = true;
+				chosen[spot] = ship;
 			}
 			return true;
 			break;
@@ -201,19 +203,19 @@ $(function() {
 			for(var d = 0; d < distance; d++) {
 				var spot = startSpot + (d * increment);
 				console.log(spot);
-				chosen[spot] = true;
+				chosen[spot] = ship;
 			}
 			break;
 			case 'L':
 			for(var l = startSpot; l > startSpot - distance; l--) {
 				console.log(l);
-				chosen[l] = true;
+				chosen[l] = ship;
 			}
 			break;
 			case 'R':
 			for(var r = startSpot; r < startSpot + distance; r++) {
 				console.log(r);
-				chosen[r] = true;
+				chosen[r] = ship;
 			}
 			break;			
 		}
@@ -221,8 +223,9 @@ $(function() {
 	
 	// TODO: refactor this
 	function checkForHit(position) {
-		var enemyShipSpots = [31,32,33,34,35]; // can use a closure after ships selected to ensure fairness? (or just the server)
-		return enemyShipSpots.indexOf(position) > -1;
+		//var enemyShipSpots = [31,32,33,34,35]; // can use a closure after ships selected to ensure fairness? (or just the server)
+		//return enemyShipSpots.indexOf(position) > -1;
+		return !!(enemyShips[position]);
 	}
 	
 	// note that document.createElement is much faster than creating jQuery elements!
