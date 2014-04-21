@@ -43,14 +43,10 @@ $(function() {
 		this.name = name;
 		this.type = type;
 	}
-	
 	Player.prototype.toString = function() {
 		return this.name;
 	}
-	
-	var me = new Player('Michael','human');
-	var comp = new Player('Computer','computer');
-	
+		
 	var shipSizes = { // possibly should do ship dimensions instead
 		'Aircraft Carrier' : 5,
 		'Battleship' : 4,
@@ -59,15 +55,23 @@ $(function() {
 		'Patrol Boat' : 2
 	};
 	
-	var humanTurn = true;
+	var activePlayer = 0;
 	var gameOver = false; // do I use this?
+	var gameState = 1; // 1 = select ships, 2 = guess, 3 = game over
 	
-	var compGuesses = {};
-	
-	// should track under Player game state
+	var me = new Player('Michael','human');
+	var myShips = {}; // should add to player	
+	var myGuesses = {};
 	var myShipCounts = clone(shipSizes); // model for tracking game state
+	var myCount = globals.NUM_NEEDED;
+	
+	var comp = new Player('Computer','computer');
+	var enemyShips;
+	var compGuesses = {}; // should add to player (since player needs this too)
 	var enemyShipCounts = clone(shipSizes);
-	var myCount = globals.NUM_NEEDED, enemyCount = myCount; // could maintain this separate state or have a dynamic sum of the shipCount objects
+	var enemyCount = globals.NUM_NEEDED; // could maintain this separate state or have a dynamic sum of the shipCount objects
+	
+	var players = [me,comp]; // so can easily flip between players! TODO: NEED TO USE THIS
 	
 	$('#mygrid').append(createTable(globals.NUM_ROWS, globals.NUM_COLS, 'My Grid')); // still need to check for null to avoid method being called? looks like this works w/o that!
 	$('#theirgrid').append(createTable(globals.NUM_ROWS, globals.NUM_COLS, "Opponent's Grid"));
@@ -86,21 +90,73 @@ $(function() {
 	})(0);
 	
 	$('#mygrid a').click(function(event) {
-		globals.numSelected += $(event.target).parent().hasClass('chosen') ? -1 : 1;
-		if(globals.numSelected === globals.NUM_NEEDED) {
-			$('#gameform button').removeClass('disabled').addClass('enabled');
-		} else {
-			$('#gameform button').removeClass('enabled').addClass('disabled'); // should just do toggleClass
+		console.log('click registered');
+		if(gameState === 1) {  // TODO: IMPROVE SELECTION LOGIC (allow ships to be selected in any order and w/ batch selection rather than square by square)
+			globals.numSelected += $(event.target).parent().hasClass('chosen') ? -1 : 1;			
+			$(event.target).parent().toggleClass('chosen');
+			
+			var position = $(event.target).text(); // get link text
+			
+			var sel = globals.numSelected, shipValue;
+			if(sel <= 5) {
+				shipValue = 'Aircraft Carrier';
+			} else if(sel > 5 && sel <= 9) {
+				shipValue = 'Battleship';
+			} else if(sel > 9 && sel <= 12) {
+				shipValue = 'Cruiser';
+			} else if(sel > 12 && sel <= 15) {
+				shipValue = 'Submarine';
+			} else if(sel > 15 && sel <= globals.NUM_NEEDED) {
+				shipValue = 'Patrol Boat';
+			}
+			
+			if(!myShips[position]) {
+				myShips[position] = shipValue;
+			} else {
+				delete myShips[position]; // remove key value pair (for now)
+			}			
+			
+			if(globals.numSelected === globals.NUM_NEEDED) {
+				$('#gameform button').removeClass('disabled').addClass('enabled');
+				console.log(myShips);
+				gameState = 2; // need a listener for this to change the view
+				$('#gameform h1').text(me + "\'s turn");
+				
+			} else {
+				$('#gameform button').removeClass('enabled').addClass('disabled'); // should just do toggleClass
+			}			
+		} else if(gameState === 2) {
+			if(activePlayer === 1) { // only register click if other player's move
+				$(event.target).parent().addClass('guessed');
+				//comp[$(event.target).text()] = true; // don't need to do this, since I set in AI function (or should I?)
+			
+				var hitRegisteredString = checkForHit(myShips,+$(event.target).text());			
+				$(event.target).parent().addClass(hitRegisteredString ? 'hit' : 'miss'); // checks for truthy value
+			
+				// check for sink event (could I add a listener or must i couple that here?)
+				if(hitRegisteredString) { // if a truthy value
+					if(--myShipCounts[hitRegisteredString] === 0) {
+						consoleMessage(comp + ' sunk ' + me + '\'s ' + hitRegisteredString + '!','importantMsg'); // again, this should be changed to be a message
+					}
+					if(--myCount === 0) { // check for game over event
+						consoleMessage(comp + ' has won the game!','importantMsg');
+					}
+				} else {
+					consoleMessage(comp + ' guessed ' + $(event.target).text() + ', but missed!');
+				}			
+				
+				activePlayer = 0;
+				$('#gameform h1').text(me + "\'s turn");
+			}
 		}
-		
-		$(event.target).parent().toggleClass('chosen');
-		console.log(globals.numSelected);
 	});
 	
+	// should try to merge these functions
 	$('#theirgrid a').click(function(event) {
-		if(humanTurn) {
+		if(activePlayer === 0 && gameState === 2) { // need to add other gameStates for these clicks
 			if(!$(event.target).parent().hasClass('guessed')) { // lots of coupling between model and view here - I can start to see why it is such a pain and why MV* libraries can be useful
 				$(event.target).parent().addClass('guessed');
+				myGuesses[$(event.target).text()] = true;
 			
 				var hitRegisteredString = checkForHit(enemyShips,+$(event.target).text());			
 				$(event.target).parent().addClass(hitRegisteredString ? 'hit' : 'miss'); // checks for truthy value
@@ -118,12 +174,15 @@ $(function() {
 				}
 			
 				// end my turn
-				humanTurn = false;
+				activePlayer = 1;
+				$('#gameform h1').text(comp + "\'s turn");
 			
 				setTimeout(function() {
-					$('#my' + runAIRandom()).trigger('click'); // AI makes a move					
-					humanTurn = true;
-				},3000);
+					var chosenSpot = runAIRandom();
+					console.log('#my' + chosenSpot);
+					$('#my' + chosenSpot + ' a').trigger('click'); // AI makes a move
+					//activePlayer = 0; // can't set this yet! switching players must be done after other logic runs (otherwise, we fire trigger event in queue, but the next line runs first!)
+				},1000);
 			}
 		}
 	});
@@ -133,7 +192,7 @@ $(function() {
 	});
 	
 	// need one for my choices also!
-	var enemyShips = generateEnemyShips(); // return an object mapping a space to a ship name (O(1) time! - but is this organized the best?)
+	enemyShips = generateEnemyShips(); // return an object mapping a space to a ship name (O(1) time! - but is this organized the best?)
 	
 	function consoleMessage(str,classValue) {
 		// should decide class value
@@ -149,8 +208,8 @@ $(function() {
 	 	var guess; // need to change to selection w/o replacement (right now, just tracks what guessed, but doesn't efficiently eliminate - this could get really bad!)
 		do {
 			guess = Math.floor(Math.random() * globals.NUM_ROWS * globals.NUM_COLS); // just a random spot on the grid
-		} while(compGuess[guess]);
-		compGuess[guess] = true;
+		} while(compGuesses[guess]);
+		compGuesses[guess] = true;
 		return guess;
 	}
 	
