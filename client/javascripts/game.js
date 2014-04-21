@@ -1,3 +1,10 @@
+// v1 complete 22:26 4/20/2014 by Michael Hergenrader
+// THIS REPRESENTS A FULL GAME (WITH A FEW USABILITY HACKS)
+// PROBLEM WITH THIS CODE IS THAT VIEW AND MODEL STATE CHANGES ARE VERY TIGHT COUPLED AND IN MULTIPLE PLACES
+// ALSO, NOT ENOUGH DATA STRUCTURES/ORGANIZATION MAKES THIS CODE HARD TO MAINTAIN
+// ALSO, AI IS VERY DUMB RIGHT NOW
+// TODO: MAKE SELECTION LOGIC BETTER (DON'T JUST ALLOW PICKING RANDOM SQUARES), structure code better based on lessons
+
 // make sure to save this time! wrote the entire battleship code on the client-side, only for it to disappear!
 
 // durstenFeld shuffle algorithm - could include as a polyfill on an array
