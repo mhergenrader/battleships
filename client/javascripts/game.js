@@ -18,8 +18,8 @@ function shuffle(array, chosen, copy) {
 	return result;	
 }
 
-var arr = [1,2,3,4,5];
-console.log(shuffle(arr,5));
+/*var arr = [1,2,3,4,5];
+console.log(shuffle(arr,5));*/
 
 // shorthand for onload
 $(function() {
@@ -37,9 +37,7 @@ $(function() {
 		'Submarine' : 3,
 		'Patrol Boat' : 2
 	};
-	
-	// TODO: UNCOMMENT
-	//var enemyShips = generateEnemyShips(); // execute this immediately?
+
 	
 	$('#mygrid').append(createTable(globals.NUM_ROWS, globals.NUM_COLS, 'My Grid')); // still need to check for null to avoid method being called? looks like this works w/o that!
 	$('#theirgrid').append(createTable(globals.NUM_ROWS, globals.NUM_COLS, "Opponent's Grid"));
@@ -51,7 +49,7 @@ $(function() {
 			$a.id = ('enemy' + count++); // jquery also provides the index parameter - refactor to use that (but know that the closure pattern worked here, though less efficient, since count is provided inline as a local param vs. a closure-provided param - this is a one-level difference in scope chain)
 		});
 	})(0);
-		
+	
 	$('#mygrid a').click(function(event) {
 		globals.numSelected += $(event.target).parent().hasClass('chosen') ? -1 : 1;
 		if(globals.numSelected === globals.NUM_NEEDED) {
@@ -72,6 +70,9 @@ $(function() {
 	$('#gameform button').click(function(event) {
 		console.log('button clicked');
 	});
+	
+	var enemyShips = generateEnemyShips(); // execute this immediately?
+	
 	
 	// this function could get ugly - try to ensure it doesn't go on forever (this is a randomized algo, after all)
 	function generateEnemyShips() {
@@ -147,6 +148,7 @@ $(function() {
 		for(var s = 0; s < len; s++) {
 			// could put this lower to only calculate if needed (but would recalculate possibly, since in a loop)
 			distance = shipSizes[shipKeys[s]]; // farthest point from spot picked (should do more with middle of ship and expand?)
+			console.log('placing ' + shipKeys[s] + ' with length ' + distance);
 			
 			while(true) {
 				shuffle(dirs,dirs.length); // no need to consume return value - just do in place; shuffle during each attempt to be more random
@@ -154,18 +156,67 @@ $(function() {
 				var trySpot = Math.floor(Math.random() * 100);
 				if(!chosen[trySpot]) { // TODO: in operator would work this same for a hash like this, which is faster?
 					for(var i = 0; i < dirs.length; i++) {
-						if(canPlaceInDirection[i](trySpot,distance,chosen)) {
+						if(canPlaceInDirection[dirs[i]](trySpot,distance,chosen)) {
 							break;
 						}
 					}
-					if(i < dirs.length) { // successful - place ship!
-						
+					if(i < dirs.length) { // successful - place ship! and break out of loop and return where these are (so can render in v1, and can track later)
+						placeShip(trySpot,dirs[i],distance,chosen);						
+						break;						
 					}
 				}
 			}
 		}
 		
+		// HACK (since coupling this control function w/ view modification - should return the points instead ONLY)
+		
+		var chosenPoints = Object.keys(chosen), chosenLen = chosenPoints.length;
+		for(var c = 0; c < chosenLen; c++) {
+			console.log(chosenPoints[c] + ' changing class');
+			$('#enemy' + chosenPoints[c]).addClass('enemyShip');
+			console.log('#enemy' + chosenPoints[c] + ': ' + $('#enemy' + chosenPoints[c]).className + ' ' + $('#enemy' + chosenPoints[c]).id);
+		}
+		
+		console.log($('#enemy35').attr('id'));
+		
+		// ENDHACK
+		
 		return shipsAvailable;
+	}
+	
+	// should combine this function w/ duplicated logic in canPlaceInDirection
+	function placeShip(startSpot, direction, distance, chosen) {
+		switch(direction) {
+			case 'U':
+			var increment = globals.NUM_COLS;
+			for(var d = 0; d > -distance; d--) {
+				var spot = startSpot + (d * increment); // not quite the same logic because need to start at startspot (rather than offset; could do startSpot during check, but this would be redundant, unless)
+				console.log(spot);
+				chosen[spot] = true;
+			}
+			return true;
+			break;
+			case 'D':
+			var increment = globals.NUM_COLS;
+			for(var d = 0; d < distance; d++) {
+				var spot = startSpot + (d * increment);
+				console.log(spot);
+				chosen[spot] = true;
+			}
+			break;
+			case 'L':
+			for(var l = startSpot; l > startSpot - distance; l--) {
+				console.log(l);
+				chosen[l] = true;
+			}
+			break;
+			case 'R':
+			for(var r = startSpot; r < startSpot + distance; r++) {
+				console.log(r);
+				chosen[r] = true;
+			}
+			break;			
+		}
 	}
 	
 	// TODO: refactor this
