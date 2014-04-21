@@ -18,17 +18,34 @@ function shuffle(array, chosen, copy) {
 	return result;	
 }
 
-/*var arr = [1,2,3,4,5];
-console.log(shuffle(arr,5));*/
+function clone(o1) {
+	var o2 = {};	
+	for(var prop in o1) {
+		if(o1.hasOwnProperty(prop)) {
+			o2[prop] = o1[prop];
+		}
+	}
+	return o2;
+}
 
 // shorthand for onload
 $(function() {
+	'use strict';
+	
 	var globals = {
 		numSelected : 0,
-		NUM_NEEDED : 3,
+		NUM_NEEDED : 17,
 		NUM_ROWS : 10,
 		NUM_COLS : 10
 	};
+	
+	function Player(name, type) {
+		this.name = name;
+		this.type = type;
+	}
+	
+	var me = new Player('Michael','human');
+	var comp = new Player('Computer','computer');
 	
 	var shipSizes = { // possibly should do ship dimensions instead
 		'Aircraft Carrier' : 5,
@@ -37,7 +54,13 @@ $(function() {
 		'Submarine' : 3,
 		'Patrol Boat' : 2
 	};
-
+	
+	var humanTurn = true;
+	
+	// should track under Player game state
+	var myShipCounts = clone(shipSizes); // model for tracking game state
+	var enemyShipCounts = clone(shipSizes);
+	var myCount = globals.NUM_NEEDED, enemyCount = myCount; // could maintain this separate state or have a dynamic sum of the shipCount objects
 	
 	$('#mygrid').append(createTable(globals.NUM_ROWS, globals.NUM_COLS, 'My Grid')); // still need to check for null to avoid method being called? looks like this works w/o that!
 	$('#theirgrid').append(createTable(globals.NUM_ROWS, globals.NUM_COLS, "Opponent's Grid"));
@@ -61,12 +84,31 @@ $(function() {
 		$(event.target).parent().toggleClass('chosen');
 		console.log(globals.numSelected);
 	});
+	
 	$('#theirgrid a').click(function(event) {
 		if(!$(event.target).parent().hasClass('guessed')) {
 			$(event.target).parent().addClass('guessed');
-			$(event.target).parent().addClass(checkForHit(+$(event.target).text()) ? 'hit' : 'miss');
+			
+			var hitRegisteredString = checkForHit(+$(event.target).text());			
+			$(event.target).parent().addClass(hitRegisteredString ? 'hit' : 'miss'); // checks for truthy value
+			
+			// check for sink event (could I add a listener or must i couple that here?)
+			if(hitRegisteredString) { // if a truthy value
+				if(--enemyShipCounts[hitRegisteredString] === 0) {
+					alert('You sunk the enemy\'s ' + hitRegisteredString + '!'); // again, this should be changed to be a message
+				}
+				
+				// check for game over event
+				if(--enemyCount === 0) {
+					alert('You have won the game!');
+				}
+			}			
+			
+			// end my turn
+			humanTurn = !humanTurn; // or just false (faster)
 		}
 	});
+	
 	$('#gameform button').click(function(event) {
 		console.log('button clicked');
 	});
@@ -225,7 +267,7 @@ $(function() {
 	function checkForHit(position) {
 		//var enemyShipSpots = [31,32,33,34,35]; // can use a closure after ships selected to ensure fairness? (or just the server)
 		//return enemyShipSpots.indexOf(position) > -1;
-		return !!(enemyShips[position]);
+		return enemyShips[position];
 	}
 	
 	// note that document.createElement is much faster than creating jQuery elements!
