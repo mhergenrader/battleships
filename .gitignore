@@ -1,0 +1,5 @@
+# ignore node_modules directory - just compile from package.json
+node_modules
+
+# also ignore this file - it is just a draft file/snapshot taken at a particular point in time
+battleshipv1.js
